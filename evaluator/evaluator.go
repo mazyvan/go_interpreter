@@ -3,6 +3,7 @@ package evaluator
 import (
 	"go_interpreter/ast"
 	"go_interpreter/object"
+	"go_interpreter/token"
 )
 
 var (
@@ -26,15 +27,12 @@ func Eval(node ast.Node) object.Object {
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
 		return evalPrefixExpression(node.Operator, right)
+	case *ast.InfixExpression:
+		left := Eval(node.Left)
+		right := Eval(node.Right)
+		return evalInfixExpression(node.Operator, left, right)
 	}
 	return nil
-}
-
-func nativeBoolToBooleanObject(input bool) *object.Boolean {
-	if input {
-		return TRUE
-	}
-	return FALSE
 }
 
 func evalPrefixExpression(operator string, right object.Object) object.Object {
@@ -46,6 +44,29 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 	default:
 		return NULL
 	}
+}
+
+func evalInfixExpression(
+	operator string,
+	left, right object.Object,
+) object.Object {
+	switch {
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalIntegerInfixExpression(operator, left, right)
+	case operator == token.EQ:
+		return nativeBoolToBooleanObject(left == right)
+	case operator == token.NOT_EQ:
+		return nativeBoolToBooleanObject(left != right)
+	default:
+		return NULL
+	}
+}
+
+func nativeBoolToBooleanObject(input bool) *object.Boolean {
+	if input {
+		return TRUE
+	}
+	return FALSE
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
@@ -67,6 +88,34 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
+}
+
+func evalIntegerInfixExpression(
+	operator string,
+	left, right object.Object,
+) object.Object {
+	leftVal := left.(*object.Integer).Value
+	rightVal := right.(*object.Integer).Value
+	switch operator {
+	case token.PLUS:
+		return &object.Integer{Value: leftVal + rightVal}
+	case token.MINUS:
+		return &object.Integer{Value: leftVal - rightVal}
+	case token.ASTERISK:
+		return &object.Integer{Value: leftVal * rightVal}
+	case token.SLASH:
+		return &object.Integer{Value: leftVal / rightVal}
+	case token.EQ:
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case token.NOT_EQ:
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	case token.GT:
+		return nativeBoolToBooleanObject(leftVal > rightVal)
+	case token.LT:
+		return nativeBoolToBooleanObject(leftVal < rightVal)
+	default:
+		return NULL
+	}
 }
 
 func evalStatements(stmts []ast.Statement) object.Object {
