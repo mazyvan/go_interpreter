@@ -41,6 +41,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(node, env)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
 	case *ast.PrefixExpression:
@@ -132,9 +134,9 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 
 func evalPrefixExpression(operator string, right object.Object) object.Object {
 	switch operator {
-	case "!":
+	case token.BANG:
 		return evalBangOperatorExpression(right)
-	case "-":
+	case token.MINUS:
 		return evalMinusPrefixOperatorExpression(right)
 	default:
 		return newError("unknown operator: %s%s", operator, right.Type())
@@ -146,6 +148,8 @@ func evalInfixExpression(
 	left, right object.Object,
 ) object.Object {
 	switch {
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ && operator == token.PLUS:
+		return evalStringInfixExpression(operator, left, right)
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
 	case operator == token.EQ:
@@ -187,6 +191,18 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
+}
+
+func evalStringInfixExpression(
+	operator string,
+	left, right object.Object,
+) object.Object {
+	if operator != token.PLUS {
+		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+	leftStr := left.(*object.String).Value
+	rightStr := right.(*object.String).Value
+	return &object.String{Value: leftStr + rightStr}
 }
 
 func evalIntegerInfixExpression(
