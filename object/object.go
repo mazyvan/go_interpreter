@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go_interpreter/ast"
+	"hash/fnv"
 	"strings"
 )
 
@@ -16,10 +17,16 @@ const (
 	INTEGER_OBJ      = "INTEGER"
 	ARRAY_OBJ        = "ARRAY"
 	BOOLEAN_OBJ      = "BOOLEAN"
+	HASH_OBJ         = "HASH"
 	NULL_OBJ         = "NULL"
 	ERROR_OBJ        = "ERROR"
 	BUILTIN_OBJ      = "BUILTIN"
 )
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
 
 type Object interface {
 	Type() ObjectType
@@ -30,12 +37,16 @@ type Integer struct {
 	Value int64
 }
 
-func (i *Integer) Inspect() string {
-	return fmt.Sprintf("%d", i.Value)
-}
-
 func (i *Integer) Type() ObjectType {
 	return INTEGER_OBJ
+}
+
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+}
+
+func (i *Integer) Inspect() string {
+	return fmt.Sprintf("%d", i.Value)
 }
 
 type String struct {
@@ -44,6 +55,12 @@ type String struct {
 
 func (s *String) Type() ObjectType {
 	return STRING_OBJ
+}
+
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
 }
 
 func (s *String) Inspect() string {
@@ -78,6 +95,16 @@ func (b *Boolean) Type() ObjectType {
 	return BOOLEAN_OBJ
 }
 
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+	return HashKey{Type: b.Type(), Value: value}
+}
+
 func (b *Boolean) Inspect() string {
 	return fmt.Sprintf("%t", b.Value)
 }
@@ -91,6 +118,36 @@ func (n *Null) Type() ObjectType {
 
 func (n *Null) Inspect() string {
 	return "null"
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType {
+	return HASH_OBJ
+}
+
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+	pairs := []string{}
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s",
+			pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+
+type Hashable interface {
+	HashKey() HashKey
 }
 
 type ReturnValue struct {
