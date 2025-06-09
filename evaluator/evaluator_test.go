@@ -442,6 +442,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`push([1, 2], 3, 4)`, "wrong number of arguments. got=3, want=2"},
 		{`push(1, 2)`, "argument to `push` must be ARRAY, got INTEGER"},
 		{`push([1, 2], "three")`, []interface{}{1, 2, "three"}},
+		{`puts("Hello, World!")`, nil},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
