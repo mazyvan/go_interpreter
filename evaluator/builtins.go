@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"bytes"
 	"fmt"
 	"go_interpreter/object"
 )
@@ -98,9 +99,11 @@ var builtins = map[string]*object.Builtin{
 	},
 	"puts": {
 		Fn: func(args ...object.Object) object.Object {
+			var out bytes.Buffer
 			for _, arg := range args {
-				fmt.Println(arg.Inspect())
+				out.WriteString(arg.Inspect() + " ")
 			}
+			fmt.Println(out.String())
 			return NULL
 		},
 	},
