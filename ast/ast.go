@@ -397,9 +397,9 @@ func (ie *DotExpression) String() string {
 	var out bytes.Buffer
 	out.WriteString("(")
 	out.WriteString(ie.Left.String())
-	out.WriteString("[")
+	out.WriteString(".")
 	out.WriteString(ie.PropertyReference.String())
-	out.WriteString("])")
+	out.WriteString(")")
 	return out.String()
 }
 
