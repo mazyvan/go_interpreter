@@ -1,0 +1,24 @@
+let port = '8080'
+let server = http()
+
+server.register('/hello', fn(req, res) {
+  puts(req)
+  puts()
+
+  let body = '{
+    "message": "hello world",
+    "port": "' + port + '",
+    "method": "' + req.method + '",
+    "query": ' + req.query + ',
+  }';
+
+  replace(res, "body", body)
+  replace(res, "status", 200)
+})
+
+server.register('/goodbye', fn(req, res) {
+  return 'goodbye world';
+})
+
+puts()
+server.listen(port)

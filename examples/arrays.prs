@@ -1,0 +1,7 @@
+let numbers = [10, 20, 30, 40, 50]
+
+puts("First element:", numbers[0])
+puts("Third element:", numbers[2])
+
+let numbers_two = push(numbers, 60)
+puts("Numbers after push:", numbers_two)
