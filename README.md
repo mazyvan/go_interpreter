@@ -39,7 +39,7 @@
 Clone the repository:
 
 ```sh
-git clone https://github.com/yourusername/persistio.git
+git clone https://github.com/mazyvan/persistio.git
 cd persistio
 ```
 
