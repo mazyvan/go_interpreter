@@ -69,6 +69,26 @@ func (l *Lexer) NextToken() token.Token {
 			tok = newToken(token.BANG, l.ch)
 		}
 	case '/':
+		if l.peekChar() == '/' {
+			// Skip single-line comment
+			for l.ch != '\n' && l.ch != 0 {
+				l.readChar()
+			}
+			return l.NextToken() // Return next token after comment
+		} else if l.peekChar() == '*' {
+			// Skip multi-line comment
+			l.readChar() // consume '*'
+			l.readChar() // consume next character
+			for !(l.ch == '*' && l.peekChar() == '/') && l.ch != 0 {
+				l.readChar()
+			}
+			if l.ch == '*' && l.peekChar() == '/' {
+				l.readChar() // consume '*'
+				l.readChar() // consume '/'
+			}
+			return l.NextToken() // Return next token after comment
+		}
+		// If not a comment, treat as division operator
 		tok = newToken(token.SLASH, l.ch)
 	case '*':
 		tok = newToken(token.ASTERISK, l.ch)

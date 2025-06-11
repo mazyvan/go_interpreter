@@ -12,7 +12,7 @@ let add = fn(x, y) {
   x + y;
 };
 let result = add(five, ten);
-!-/*5;
+!-/5;
 5 < 10 > 5;
 
 if (5 < 10) {
@@ -28,6 +28,11 @@ if (5 < 10) {
 [1, 2];
 {"foo": "bar"}
 a.b
+// This is a comment
+let another = 10; // Another comment
+/* This is a
+multi-line comment
+*/
 `
 	tests := []struct {
 		expectedType    token.TokenType
@@ -72,7 +77,6 @@ a.b
 		{token.BANG, "!"},
 		{token.MINUS, "-"},
 		{token.SLASH, "/"},
-		{token.ASTERISK, "*"},
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
 		{token.INT, "5"},
@@ -122,6 +126,11 @@ a.b
 		{token.IDENT, "a"},
 		{token.DOT, "."},
 		{token.IDENT, "b"},
+		{token.LET, "let"},
+		{token.IDENT, "another"},
+		{token.ASSIGN, "="},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
 
