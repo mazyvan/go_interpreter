@@ -3,7 +3,9 @@ package evaluator
 import (
 	"bytes"
 	"fmt"
-	"go_interpreter/object"
+	"net/http"
+	"persistio/lib"
+	"persistio/object"
 )
 
 var builtins = map[string]*object.Builtin{
