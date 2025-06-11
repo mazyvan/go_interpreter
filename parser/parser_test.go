@@ -2,8 +2,8 @@ package parser
 
 import (
 	"fmt"
-	"go_interpreter/ast"
-	"go_interpreter/lexer"
+	"persistio/ast"
+	"persistio/lexer"
 	"testing"
 )
 
@@ -217,6 +217,29 @@ func TestParsingIndexExpressions(t *testing.T) {
 	}
 	if !testInfixExpression(t, indexExp.Index, 1, "+", 1) {
 		return
+	}
+}
+
+func TestParsingDotExpressions(t *testing.T) {
+	input := "myObject.property;"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+	dotExp, ok := stmt.Expression.(*ast.DotExpression)
+	if !ok {
+		t.Fatalf("exp not *ast.DotExpression. got=%T", stmt.Expression)
+	}
+	if !testIdentifier(t, dotExp.Left, "myObject") {
+		return
+	}
+	if _, ok := dotExp.PropertyReference.(*ast.StringLiteral); !ok {
+		t.Errorf("dotExp.Property is not ast.StringLiteral. got=%T", dotExp.PropertyReference)
 	}
 }
 

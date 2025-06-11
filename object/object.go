@@ -3,8 +3,8 @@ package object
 import (
 	"bytes"
 	"fmt"
-	"go_interpreter/ast"
 	"hash/fnv"
+	"persistio/ast"
 	"strings"
 )
 

@@ -2,7 +2,7 @@ package ast
 
 import (
 	"bytes"
-	"go_interpreter/token"
+	"persistio/token"
 	"strings"
 )
 
@@ -375,6 +375,30 @@ func (ie *IndexExpression) String() string {
 	out.WriteString(ie.Left.String())
 	out.WriteString("[")
 	out.WriteString(ie.Index.String())
+	out.WriteString("])")
+	return out.String()
+}
+
+type DotExpression struct {
+	Token             token.Token // The . token
+	Left              Expression
+	PropertyReference Expression
+}
+
+func (ie *DotExpression) expressionNode() {
+
+}
+
+func (ie *DotExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+
+func (ie *DotExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString("[")
+	out.WriteString(ie.PropertyReference.String())
 	out.WriteString("])")
 	return out.String()
 }

@@ -1,9 +1,9 @@
 package evaluator
 
 import (
-	"go_interpreter/lexer"
-	"go_interpreter/object"
-	"go_interpreter/parser"
+	"persistio/lexer"
+	"persistio/object"
+	"persistio/parser"
 	"testing"
 )
 
@@ -214,6 +214,49 @@ func TestHashIndexExpressions(t *testing.T) {
 	}
 }
 
+func TestHashDotExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{
+			`{"foo": 5}.foo`,
+			5,
+		},
+		{
+			`{"foo": 5, "bar": 10}.bar`,
+			10,
+		},
+		{
+			`{"foo": 5, "bar": 10}.foo + {"foo": 5, "bar": 10}.bar`,
+			15,
+		},
+		{
+			`{"foo": 5, "bar": 10}.baz`,
+			nil,
+		},
+		{
+			`let object = {"baz": 15}; object.baz`,
+			15,
+		},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		if evaluated == NULL {
+			if tt.expected != nil {
+				t.Errorf("expected non-nil value, got NULL for input: %s", tt.input)
+			}
+			continue
+		}
+		integer, ok := tt.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
+		}
+	}
+}
+
 func TestEvalBooleanExpression(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -413,6 +456,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		input    string
 		expected interface{}
 	}{
+		// {`str(1)`, "1"}, // Can't test this one
 		{`len("")`, 0},
 		{`len("four")`, 4},
 		{`len("hello world")`, 11},
@@ -443,6 +487,8 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`push(1, 2)`, "argument to `push` must be ARRAY, got INTEGER"},
 		{`push([1, 2], "three")`, []interface{}{1, 2, "three"}},
 		{`puts("Hello, World!")`, nil},
+		{`replace([1, 2, 3], 0, 4)`, nil},
+		{`replace({"foo": "bar"}, "foo", "baz")`, nil},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
@@ -460,6 +506,98 @@ func TestBuiltinFunctions(t *testing.T) {
 				t.Errorf("wrong error message. expected=%q, got=%q",
 					expected, errObj.Message)
 			}
+		case []int:
+			arr, ok := evaluated.(*object.Array)
+			if !ok {
+				t.Errorf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+			if len(arr.Elements) != len(expected) {
+				t.Errorf("array has wrong number of elements. got=%d, want=%d",
+					len(arr.Elements), len(expected))
+				continue
+			}
+			for i, v := range expected {
+				if !testIntegerObject(t, arr.Elements[i], int64(v)) {
+					t.Errorf("array element at index %d is not %d", i, v)
+					continue
+				}
+			}
+		case []interface{}:
+			arr, ok := evaluated.(*object.Array)
+			if !ok {
+				t.Errorf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+			if len(arr.Elements) != len(expected) {
+				t.Errorf("array has wrong number of elements. got=%d, want=%d",
+					len(arr.Elements), len(expected))
+				continue
+			}
+			for i, v := range expected {
+				if str, ok := v.(string); ok {
+					if arr.Elements[i].Type() != object.STRING_OBJ {
+						t.Errorf("array element at index %d is not STRING. got=%T (%+v)",
+							i, arr.Elements[i], arr.Elements[i])
+						continue
+					}
+					if arr.Elements[i].(*object.String).Value != str {
+						t.Errorf("array element at index %d has wrong value. got=%q, want=%q",
+							i, arr.Elements[i].(*object.String).Value, str)
+						continue
+					}
+				} else if num, ok := v.(int); ok {
+					if arr.Elements[i].Type() != object.INTEGER_OBJ {
+						t.Errorf("array element at index %d is not INTEGER. got=%T (%+v)",
+							i, arr.Elements[i], arr.Elements[i])
+						continue
+					}
+					if arr.Elements[i].(*object.Integer).Value != int64(num) {
+						t.Errorf("array element at index %d has wrong value. got=%d, want=%d",
+							i, arr.Elements[i].(*object.Integer).Value, num)
+						continue
+					}
+				} else {
+					t.Errorf("unexpected type in array element at index %d: %T (%+v)",
+						i, v, v)
+					continue
+				}
+			}
+		case map[string]string:
+			hash, ok := evaluated.(*object.Hash)
+			if !ok {
+				t.Errorf("object is not Hash. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+			if len(hash.Pairs) != len(expected) {
+				t.Errorf("hash has wrong number of pairs. got=%d, want=%d",
+					len(hash.Pairs), len(expected))
+				continue
+			}
+			for key, value := range expected {
+				strKey := &object.String{Value: key}
+				pair, ok := hash.Pairs[strKey.HashKey()]
+				if !ok {
+					t.Errorf("no pair for key %q in hash", key)
+					continue
+				}
+				if pair.Value.Type() != object.STRING_OBJ {
+					t.Errorf("pair value for key %q is not STRING. got=%T (%+v)",
+						key, pair.Value, pair.Value)
+					continue
+				}
+				if pair.Value.(*object.String).Value != value {
+					t.Errorf("pair value for key %q has wrong value. got=%q, want=%q",
+						key, pair.Value.(*object.String).Value, value)
+					continue
+				}
+			}
+		case nil:
+			if evaluated != NULL {
+				t.Errorf("object is not NULL. got=%T (%+v)", evaluated, evaluated)
+			}
+		default:
+			t.Error("unexpected type in test case:", tt.input)
 		}
 	}
 }

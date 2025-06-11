@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"go_interpreter/token"
+	"persistio/token"
 	"testing"
 )
 

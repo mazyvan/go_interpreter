@@ -26,6 +26,7 @@ const (
 	LT     = "<"
 	GT     = ">"
 	// Delimiters
+	DOT       = "."
 	COMMA     = ","
 	COLON     = ":"
 	SEMICOLON = ";"

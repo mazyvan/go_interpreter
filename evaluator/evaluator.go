@@ -2,9 +2,9 @@ package evaluator
 
 import (
 	"fmt"
-	"go_interpreter/ast"
-	"go_interpreter/object"
-	"go_interpreter/token"
+	"persistio/ast"
+	"persistio/object"
+	"persistio/token"
 )
 
 var (
@@ -73,6 +73,27 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Array{Elements: elements}
 	case *ast.HashLiteral:
 		return evalHashLiteral(node, env)
+	case *ast.DotExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+		stringRef := Eval(node.PropertyReference, env)
+		if isError(stringRef) {
+			return stringRef
+		}
+		if stringRef.Type() != object.STRING_OBJ {
+			return newError("property reference must be a string: %s", node.PropertyReference)
+		}
+		_, ok := stringRef.(object.Hashable)
+		if !ok {
+			return newError("property reference must be hashable: %s", node.PropertyReference)
+		}
+		if left.Type() != object.HASH_OBJ {
+			return newError("dot operator not supported: %s[%s]", left.Type(), stringRef.Type())
+		}
+
+		return evalIndexExpression(left, stringRef)
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
 		if isError(left) {

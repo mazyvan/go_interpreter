@@ -1,7 +1,7 @@
 package lexer
 
 import (
-	"go_interpreter/token"
+	"persistio/token"
 	"testing"
 )
 
@@ -27,6 +27,7 @@ if (5 < 10) {
 "foo bar"
 [1, 2];
 {"foo": "bar"}
+a.b
 `
 	tests := []struct {
 		expectedType    token.TokenType
@@ -118,6 +119,9 @@ if (5 < 10) {
 		{token.COLON, ":"},
 		{token.STRING, "bar"},
 		{token.RBRACE, "}"},
+		{token.IDENT, "a"},
+		{token.DOT, "."},
+		{token.IDENT, "b"},
 		{token.EOF, ""},
 	}
 
