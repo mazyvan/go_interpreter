@@ -23,6 +23,7 @@ type Expression interface {
 
 type Program struct {
 	Statements []Statement
+	BasePath   string
 }
 
 func (p *Program) TokenLiteral() string {
@@ -55,32 +56,6 @@ func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal
 }
 
-type ReturnStatement struct {
-	Token       token.Token // the 'return' token
-	ReturnValue Expression
-}
-
-func (rs *ReturnStatement) statementNode() {
-
-}
-
-func (rs *ReturnStatement) TokenLiteral() string {
-	return rs.Token.Literal
-}
-
-type ExpressionStatement struct {
-	Token      token.Token // the first token of the expression
-	Expression Expression
-}
-
-func (es *ExpressionStatement) statementNode() {
-
-}
-
-func (es *ExpressionStatement) TokenLiteral() string {
-	return es.Token.Literal
-}
-
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 	out.WriteString(ls.TokenLiteral() + " ")
@@ -94,6 +69,69 @@ func (ls *LetStatement) String() string {
 	return out.String()
 }
 
+type AssignExpression struct {
+	Token token.Token // the token.ASSIGN token
+	Name  *Identifier
+	Value Expression
+}
+
+func (ae *AssignExpression) expressionNode() {
+
+}
+
+func (ae *AssignExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(ae.TokenLiteral() + " ")
+	out.WriteString(ae.Name.String())
+	out.WriteString(" = ")
+	if ae.Value != nil {
+		out.WriteString(ae.Value.String())
+	}
+	out.WriteString(";")
+	return out.String()
+}
+
+func (ae *AssignExpression) TokenLiteral() string {
+	return ae.Token.Literal
+}
+
+type LoadStatement struct {
+	Token    token.Token // the token.LOAD token
+	Name     *Identifier
+	Location *StringLiteral
+}
+
+func (ls *LoadStatement) statementNode() {
+
+}
+
+func (ls *LoadStatement) TokenLiteral() string {
+	return ls.Token.Literal
+}
+
+func (ls *LoadStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(ls.TokenLiteral() + " ")
+	out.WriteString(ls.Location.String())
+	out.WriteString(" AS ")
+	out.WriteString(ls.Name.String())
+	out.WriteString(";")
+	return out.String()
+}
+
+type ReturnStatement struct {
+	Token       token.Token // the 'return' token
+	ReturnValue Expression
+}
+
+func (rs *ReturnStatement) statementNode() {
+
+}
+
+func (rs *ReturnStatement) TokenLiteral() string {
+	return rs.Token.Literal
+}
+
 func (rs *ReturnStatement) String() string {
 	var out bytes.Buffer
 	out.WriteString(rs.TokenLiteral() + " ")
@@ -102,6 +140,19 @@ func (rs *ReturnStatement) String() string {
 	}
 	out.WriteString(";")
 	return out.String()
+}
+
+type ExpressionStatement struct {
+	Token      token.Token // the first token of the expression
+	Expression Expression
+}
+
+func (es *ExpressionStatement) statementNode() {
+
+}
+
+func (es *ExpressionStatement) TokenLiteral() string {
+	return es.Token.Literal
 }
 
 func (es *ExpressionStatement) String() string {
