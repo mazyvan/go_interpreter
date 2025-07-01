@@ -2,8 +2,10 @@ package evaluator
 
 import (
 	"fmt"
+	"path/filepath"
 	"persistio/ast"
 	"persistio/object"
+	"persistio/program"
 	"persistio/token"
 )
 
@@ -13,9 +15,12 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
+var BasePath string
+
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
+		BasePath = node.BasePath
 		return evalProgram(node, env)
 	// Statements
 	case *ast.ExpressionStatement:
@@ -28,6 +33,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
+	case *ast.LoadStatement:
+		load := &object.Load{
+			Location:   filepath.Join(BasePath, node.Location.Value),
+			Identifier: node.Name.Value,
+		}
+		_, subprogramEnv := program.CreateProgramFromFile(load.Location, Eval)
+		load.Environment = subprogramEnv
+		env.Set(node.Name.Value, load)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if isError(val) {
@@ -45,6 +58,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.String{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
+	case *ast.AssignExpression:
+		return evalAssignExpression(node, env)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if isError(right) {
@@ -77,6 +92,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		left := Eval(node.Left, env)
 		if isError(left) {
 			return left
+		}
+		if load, ok := left.(*object.Load); ok {
+			propRef := Eval(node.PropertyReference, env)
+			if val, ok := load.Environment.Get(propRef.(*object.String).Value); ok {
+				return val
+			}
+			return newError("reference not found: %s", propRef.Inspect())
 		}
 		stringRef := Eval(node.PropertyReference, env)
 		if isError(stringRef) {
@@ -156,7 +178,7 @@ func evalIdentifier(
 	if val, ok := env.Get(node.Value); ok {
 		return val
 	}
-	if builtin, ok := builtins[node.Value]; ok {
+	if builtin, ok := getBuiltins(env)[node.Value]; ok {
 		return builtin
 	}
 	return newError("identifier not found: %s", node.Value)
@@ -202,6 +224,8 @@ func evalHashLiteral(
 
 func evalIndexExpression(left, index object.Object) object.Object {
 	switch {
+	case left.Type() == object.LOAD_OBJ && index.Type() == object.STRING_OBJ:
+		return evalLoadIdentifierReference(left, index)
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index)
 	case left.Type() == object.HASH_OBJ:
@@ -232,6 +256,26 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 		return NULL
 	}
 	return pair.Value
+}
+
+func evalLoadIdentifierReference(load, propertyRef object.Object) object.Object {
+	loadObject := load.(*object.Load)
+	propertyRefObject := propertyRef.(*object.String)
+	if val, ok := loadObject.Environment.Get(propertyRefObject.Value); ok {
+		return val
+	}
+	return newError("reference not found: %s", propertyRefObject.Value)
+}
+
+func evalAssignExpression(
+	node *ast.AssignExpression,
+	env *object.Environment,
+) object.Object {
+	val := Eval(node.Value, env)
+	if isError(val) {
+		return val
+	}
+	return env.Set(node.Name.Value, val)
 }
 
 func evalPrefixExpression(operator string, right object.Object) object.Object {
