@@ -5,28 +5,15 @@ import (
 	"os"
 	"os/user"
 	"persistio/evaluator"
-	"persistio/lexer"
-	"persistio/object"
-	"persistio/parser"
+	"persistio/program"
 	"persistio/repl"
 )
 
 func main() {
 	if len(os.Args) > 1 {
+		eval := evaluator.Eval
 		filePathArgument := os.Args[1]
-		utilsContent, err := os.ReadFile("utils/utils.prs")
-		if err != nil {
-			panic(err)
-		}
-		content, err := os.ReadFile(filePathArgument)
-		if err != nil {
-			panic(err)
-		}
-		l := lexer.New(string(utilsContent) + string(content))
-		p := parser.New(l)
-		program := p.ParseProgram()
-		env := object.NewEnvironment()
-		evaluator.Eval(program, env)
+		program.CreateProgramFromFile(filePathArgument, eval)
 	} else {
 		user, err := user.Current()
 		if err != nil {
