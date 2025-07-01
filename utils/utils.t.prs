@@ -1,0 +1,54 @@
+load "utils.prs" as utils;
+
+let noErrorsFlag = true;
+
+let assert = fn(cond, msg) {
+  if (!cond) {
+    noErrorsFlag = false;
+    puts("Assertion failed: " + msg);
+  }
+};
+
+puts("Running tests...");
+puts();
+
+let test_map = fn() {
+  let arr = [1, 2, 3 + 4];
+  let expected = [2, 4, 14];
+
+  let result = utils.map(arr, fn(x) { x * 2 });
+
+  assert(result[0] == expected[0], "map failed at index 0");
+  assert(result[1] == expected[1], "map failed at index 1");
+  assert(result[2] == expected[2], "map failed at index 2");
+};
+
+let test_reduce = fn() {
+  let initial = 100;
+  let arr = [21, 2, 3];
+  let expected = 74;
+
+  let result = utils.reduce(arr, 100, fn(acc, x) { acc - x });
+
+  assert(result == expected, "reduce failed");
+};
+
+let test_sum = fn() {
+  let arr = [5, 1, 2, 3, 15];
+  let expected = 26;
+
+  let result = utils.sum(arr);
+
+  assert(result == expected, "sum failed");
+};
+
+test_map();
+test_reduce();
+test_sum();
+
+puts();
+if (!noErrorsFlag) {
+  puts("[FAILURE]: Some tests failed");
+} else {
+  puts("[SUCCESS]: All tests passed");
+}
