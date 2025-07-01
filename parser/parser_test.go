@@ -7,6 +7,56 @@ import (
 	"testing"
 )
 
+func TestLoadStatements(t *testing.T) {
+	tests := []struct {
+		input              string
+		expectedIdentifier string
+		expectedLocation   string
+	}{
+		{"load \"utils/utils.prs\" as utils;", "utils", "utils/utils.prs"},
+		{"load \"math/math.prs\" as math;", "math", "math/math.prs"},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statements. got=%d",
+				len(program.Statements))
+		}
+		stmt := program.Statements[0]
+		if !testLoadStatement(t, stmt, tt.expectedIdentifier, tt.expectedLocation) {
+			return
+		}
+	}
+}
+
+func testLoadStatement(t *testing.T, s ast.Statement, name string, location string) bool {
+	if s.TokenLiteral() != "load" {
+		t.Errorf("s.TokenLiteral not 'load'. got=%q", s.TokenLiteral())
+		return false
+	}
+	loadStmt, ok := s.(*ast.LoadStatement)
+	if !ok {
+		t.Errorf("s not *ast.LoadStatement. got=%T", s)
+		return false
+	}
+	if loadStmt.Name.Value != name {
+		t.Errorf("loadStmt.Name.Value not '%s'. got=%s", name, loadStmt.Name.Value)
+		return false
+	}
+	if loadStmt.Name.TokenLiteral() != name {
+		t.Errorf("s.Name not '%s'. got=%s", name, loadStmt.Name)
+		return false
+	}
+	if loadStmt.Location.Value != location {
+		t.Errorf("loadStmt.Location.Value not '%s'. got=%s", location, loadStmt.Location.Value)
+		return false
+	}
+	return true
+}
+
 func TestLetStatements(t *testing.T) {
 	tests := []struct {
 		input              string
@@ -53,6 +103,57 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 	}
 	if letStmt.Name.TokenLiteral() != name {
 		t.Errorf("s.Name not '%s'. got=%s", name, letStmt.Name)
+		return false
+	}
+	return true
+}
+
+func TestReassignmentExpressions(t *testing.T) {
+	tests := []struct {
+		input              string
+		expectedIdentifier string
+		expectedValue      interface{}
+	}{
+		{"let x = 5; x = 6;", "x", 6},
+		{"let y = true; y = false", "y", false},
+		{"let foobar = y; foobar = x", "foobar", "x"},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 2 {
+			t.Fatalf("program.Statements does not contain 2 statements. got=%d",
+				len(program.Statements))
+		}
+		stmt := program.Statements[1].(*ast.ExpressionStatement)
+		asgExp, ok := stmt.Expression.(*ast.AssignExpression)
+		if !ok {
+			t.Fatalf("exp not *ast.AssignExpression. got=%T", stmt.Expression)
+		}
+		if !testReassignmentExpression(t, asgExp, tt.expectedIdentifier, tt.expectedValue) {
+			return
+		}
+	}
+}
+
+func testReassignmentExpression(t *testing.T, exp ast.Expression, name string, value interface{}) bool {
+	asgExp, ok := exp.(*ast.AssignExpression)
+	if !ok {
+		t.Errorf("s not *ast.AssignExpression. got=%T", exp)
+		return false
+	}
+	if asgExp.Name.Value != name {
+		t.Errorf("asgExp.Name.Value not '%s'. got=%s", name, asgExp.Name.Value)
+		return false
+	}
+	if !testLiteralExpression(t, asgExp.Value, value) {
+		t.Errorf("asgExp.Value not '%v'. got=%s", value, asgExp.Value)
+		return false
+	}
+	if asgExp.Name.TokenLiteral() != name {
+		t.Errorf("s.Name not '%s'. got=%s", name, asgExp.Name)
 		return false
 	}
 	return true
