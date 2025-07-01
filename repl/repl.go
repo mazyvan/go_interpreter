@@ -4,18 +4,19 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"persistio/evaluator"
 	"persistio/lexer"
-	"persistio/object"
 	"persistio/parser"
+	"persistio/program"
 )
 
 const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
+	eval := evaluator.Eval
+	_, env := program.CreateBaseProgram(eval)
+
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 	for {
 		fmt.Print(PROMPT)
 		scanned := scanner.Scan()
