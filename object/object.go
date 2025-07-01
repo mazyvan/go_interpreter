@@ -12,6 +12,7 @@ type ObjectType string
 
 const (
 	FUNCTION_OBJ     = "FUNCTION"
+	LOAD_OBJ         = "LOAD"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	STRING_OBJ       = "STRING"
 	INTEGER_OBJ      = "INTEGER"
@@ -211,4 +212,19 @@ func (b *Builtin) Type() ObjectType {
 
 func (b *Builtin) Inspect() string {
 	return "builtin function"
+}
+
+type Load struct {
+	Identifier  string
+	Location    string
+	Environment *Environment
+	Object      Object
+}
+
+func (l *Load) Type() ObjectType {
+	return LOAD_OBJ
+}
+
+func (l *Load) Inspect() string {
+	return fmt.Sprintf("load %s as %s", l.Location, l.Identifier)
 }
