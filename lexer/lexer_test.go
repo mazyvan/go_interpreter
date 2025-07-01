@@ -6,7 +6,10 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `let five = 5;
+	input := `
+load "utils/utils.prs" as utils;
+
+let five = 5;
 let ten = 10;
 let add = fn(x, y) {
   x + y;
@@ -38,6 +41,11 @@ multi-line comment
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
+		{token.LOAD, "load"},
+		{token.STRING, "utils/utils.prs"},
+		{token.AS, "as"},
+		{token.IDENT, "utils"},
+		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
 		{token.IDENT, "five"},
 		{token.ASSIGN, "="},
